@@ -1,7 +1,7 @@
 import atexit
 from datetime import datetime
-from sqlalchemy import create_engine, String, DateTime, func
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped
+from sqlalchemy import create_engine, String, DateTime, Integer, ForeignKey, func
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped, relationship
 
 POSTGRES_PASSWORD = '92311'
 POSTGRES_USER = 'postgres'
@@ -28,7 +28,8 @@ class Advertisement(Base):
     header: Mapped[str] = mapped_column(String(20), unique=False, nullable=False)
     description: Mapped[str] = mapped_column(String(150), unique=False, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    owner: ...
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="ads")
 
     @property
     def dict(self):
@@ -39,6 +40,16 @@ class Advertisement(Base):
             "created_at": self.created_at.isoformat(),
             "owner": self.owner
         }
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(180), nullable=False)
+    registration_time: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    ads = relationship("Advertisement", back_populates="owners")
 
 
 Base.metadata.create_all(bind=engine)
